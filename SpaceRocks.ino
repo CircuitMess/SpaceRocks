@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <MAKERphone.h>
 #include "Sprites.h"
 MAKERphone mp;
@@ -579,10 +580,8 @@ void enterInitials() {
   }
   while(!mp.update());
 }
-
 void setup() {
   Serial.begin(115200);
-
   shoot = new MPTrack("/SpaceRocks/shoot.wav");
   collide = new MPTrack("/SpaceRocks/collide.wav");
   hit = new MPTrack("/SpaceRocks/hit.wav");
@@ -630,7 +629,6 @@ void loop()
 {
   if(mp.update())
 	{
-    
     mp.display.fillScreen(TFT_BLACK);
 		switch (simState)
 		{
@@ -901,11 +899,15 @@ void loop()
 			break;
 
 			case ProgState::Pause:
-			mp.display.setCursor(32, mp.display.height()/2 - 16);
+      mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+			mp.display.setCursor(32, mp.display.height()/2 - 25);
 			mp.display.setTextSize(2);
       mp.display.setTextFont(2);
       mp.display.setTextColor(TFT_WHITE);
       mp.display.printCenter(F("PAUSE"));
+      mp.display.setTextSize(1);
+      mp.display.setCursor(110,110);
+      mp.display.printCenter("A: resume       B: quit");
 			if (mp.buttons.released(BTN_A))
       { 
         simState = ProgState::Simulation;
@@ -913,9 +915,6 @@ void loop()
       }
       if (mp.buttons.released(BTN_B))
         resetSim();
-      if (mp.buttons.released(BTN_UP) || mp.buttons.released(BTN_DOWN))
-      {
-			}
 			break;
 
 			case ProgState::DataErasure:
