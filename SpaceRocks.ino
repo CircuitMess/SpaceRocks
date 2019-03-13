@@ -6,6 +6,9 @@ MPTrack *shoot;
 MPTrack *collide;
 MPTrack *hit;
 MPTrack *bgmusic;
+MPTrack *titleMusic;
+MPTrack *gameoverMusic;
+MPTrack *destroyed;
 /*
     Space Rocks
     Copyright (C) 2019 CircuitMess
@@ -517,11 +520,10 @@ void resetSim() {
   resetField();
   bgmusic->stop();
   removeTrack(bgmusic);
-  bgmusic = new MPTrack("/SpaceRocks/title.wav");
-  addTrack(bgmusic);
-  bgmusic->setVolume(250);
-  bgmusic->setRepeat(1);
-  bgmusic->play();
+  addTrack(titleMusic);
+  titleMusic->setVolume(250);
+  titleMusic->setRepeat(1);
+  titleMusic->play();
   simState = ProgState::Main;
   score = 0;
 }
@@ -585,7 +587,10 @@ void setup() {
   shoot = new MPTrack("/SpaceRocks/shoot.wav");
   collide = new MPTrack("/SpaceRocks/collide.wav");
   hit = new MPTrack("/SpaceRocks/hit.wav");
-  bgmusic = new MPTrack("/SpaceRocks/title.wav");
+  bgmusic = new MPTrack("/SpaceRocks/bgmusic.wav");
+  titleMusic = new MPTrack("/SpaceRocks/title.wav");
+  gameoverMusic = new MPTrack("/SpaceRocks/gameover.wav");
+  destroyed = new MPTrack("/SpaceRocks/destroyed.wav");
   // put your setup code here, to run once:
   mp.begin(0);
   addTrack(shoot);
@@ -615,6 +620,10 @@ void setup() {
   shoot->setVolume(200);
   collide->setVolume(200);
   hit->setVolume(200);
+  titleMusic->setVolume(200);
+  gameoverMusic->setVolume(200);
+  bgmusic->setVolume(200);
+  destroyed->setVolume(200);
   randomSeed(millis());
   resetSim();
   resetField();
@@ -674,9 +683,8 @@ void loop()
           resetField();
           
           simState = ProgState::Simulation;
-          bgmusic->stop();
-          removeTrack(bgmusic);
-          bgmusic = new MPTrack("/SpaceRocks/bgmusic.wav");
+          titleMusic->stop();
+          removeTrack(titleMusic);
           addTrack(bgmusic);
           bgmusic->setVolume(250);
           bgmusic->setRepeat(1);
@@ -685,6 +693,7 @@ void loop()
 				if (mp.buttons.released(BTN_B))
 				{
 					while(!mp.update());
+          Serial.println(ESP.getFreeHeap());
 					simState = ProgState::DataDisplay;
         }
 			}
@@ -734,10 +743,9 @@ void loop()
           delay(500);
           bgmusic->stop();
           removeTrack(bgmusic);
-          bgmusic = new MPTrack("/SpaceRocks/destroyed.wav");
-          addTrack(bgmusic);
-          bgmusic->setVolume(250);
-          bgmusic->play();
+          addTrack(destroyed);
+          destroyed->setVolume(250);
+          destroyed->play();
           dyingAnimation();
           mp.display.drawIcon(backdrop, 0, 0, 160, 128);
           while(!mp.update());
@@ -753,25 +761,17 @@ void loop()
           }
           mp.display.drawBitmap(26, 15, gameover, TFT_DARKGREY);
           mp.display.drawBitmap(28, 13, gameover, TFT_BLACK);
-          bgmusic->stop();
-          removeTrack(bgmusic);
-          bgmusic = new MPTrack("/SpaceRocks/gameover.wav");
-          addTrack(bgmusic);
-          bgmusic->setVolume(250);
-          bgmusic->play();
-          bgmusic->setRepeat(1);
+          destroyed->stop();
+          removeTrack(destroyed);
+          addTrack(gameoverMusic);
+          gameoverMusic->setVolume(250);
+          gameoverMusic->play();
+          gameoverMusic->setRepeat(1);
           while(!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_B))
             mp.update();
           while(!mp.update());
           
           simState = ProgState::DataEntry;
-          bgmusic->stop();
-          removeTrack(bgmusic);
-          bgmusic = new MPTrack("/SpaceRocks/title.wav");
-          addTrack(bgmusic);
-          bgmusic->setVolume(250);
-          bgmusic->setRepeat(1);
-          bgmusic->play();
 				}
 			}
 			break;
@@ -782,10 +782,12 @@ void loop()
         bgmusic->stop();
         collide->stop();
         hit->stop();
+        gameoverMusic->stop();
         removeTrack(shoot);
         removeTrack(bgmusic);
         removeTrack(collide);
         removeTrack(hit);
+        removeTrack(gameoverMusic);
         JsonArray &hiscores = mp.getJSONfromSAV(highscoresPath);
         for (JsonObject& element : hiscores)
         {
@@ -846,11 +848,11 @@ void loop()
 			case ProgState::DataDisplay:
       {
         shoot->stop();
-        bgmusic->stop();
+        titleMusic->stop();
         collide->stop();
         hit->stop();
         removeTrack(shoot);
-        removeTrack(bgmusic);
+        removeTrack(titleMusic);
         removeTrack(collide);
         removeTrack(hit);
         mp.display.drawIcon(backdrop, 0, 0, 160, 128);
@@ -895,6 +897,7 @@ void loop()
         addTrack(shoot);
         addTrack(collide);
         addTrack(hit);
+        addTrack(titleMusic);
       }
 			break;
 
