@@ -4,7 +4,7 @@
 
 #
 
-An original game developed for MAKERphone and inspired by the original Asteroids video game from 1979 https://en.wikipedia.org/wiki/Asteroids_(video_game).
+An original game developed for CircuitMess Ringo and inspired by the original Asteroids video game from 1979 https://en.wikipedia.org/wiki/Asteroids_(video_game).
 
 Based on the code from [Xavier](https://github.com/CDRXavier) - [Asteroids](https://github.com/CDRXavier/ASTEROID/tree/master) 
 
