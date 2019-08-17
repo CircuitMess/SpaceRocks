@@ -13,7 +13,6 @@ All used in-game sounds used are licensed under the [CC0 license](https://creati
 
 ![alt text](https://github.com/CircuitMess/SpaceRocks/blob/master/Screenshot%202.png)
 
-#
 
 <br/>
 
