@@ -2,13 +2,16 @@
 #include <MAKERphone.h>
 #include "Sprites.h"
 MAKERphone mp;
-MPTrack *shoot;
+// MPTrack *shoot;
 MPTrack *collide;
-MPTrack *hit;
+// MPTrack *hit;
 MPTrack *bgmusic;
 MPTrack *titleMusic;
 MPTrack *gameoverMusic;
 MPTrack *destroyed;
+Oscillator *shoot;
+Oscillator *hit;
+File file;
 /*
     Space Rocks
     Copyright (C) 2019 CircuitMess
@@ -38,21 +41,21 @@ float shipX;
 float shipY;
 float velocityX;
 float velocityY;
-int8_t HDG;
+int16_t HDG;
 //bool released;
 signed short bullet[8][5];
 float asteroids[8][4];
-uint8_t asteroidDraw[8];
+uint16_t asteroidDraw[8];
 float rocks[16][4];
-uint8_t rockDraw[16];
+uint16_t rockDraw[16];
 float pebbles[32][4];
-uint8_t pebbleDraw[32];
-byte bulletCount;
-byte asteroidCount;
-byte rockCount;
-byte pebbleCount;
-int8_t life = 3;
-uint8_t level = 0;
+uint16_t pebbleDraw[32];
+int bulletCount;
+int asteroidCount;
+int rockCount;
+int pebbleCount;
+int16_t life = 3;
+uint16_t level = 0;
 uint16_t score;
 uint16_t tempScore = 0;
 char tick;
@@ -60,6 +63,8 @@ bool turnC;
 bool invincibility = 0;
 #define INVINCIBILITY_PERIOD 2000
 uint32_t invincMillis = 0;
+uint32_t pixelsTimer = millis();
+bool pixelsState = 0;
 enum class ProgState : uint8_t {Main, Simulation,  DataEntry, DataDisplay, Pause, DataErasure};
 String name;
 static const PROGMEM float heading[24][2] = {
@@ -101,6 +106,12 @@ ProgState simState = ProgState::Main;
 void collision() {
   collide->rewind();
   collide->play();
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    mp.leds[i] = CRGB(255,0,0);
+    pixelsTimer=millis();
+    pixelsState=1;  
+  }
 	//   sound.tone(150, 50);
 	life = life - 1;
   if(life>0)
@@ -197,30 +208,11 @@ void firing() {
   bullet[bulletCount][2] = shipY1;
   bullet[bulletCount][4] = 120;
   bulletCount = bulletCount + 1;
-  // shoot->beep(1200, 0.05);
-  shoot->rewind();
-  shoot->play();
+  shoot->note(75, 0.05);
   
-  // shoot->setADSR(0.5,0.5,0.5,20);
-  // shoot->setVolume(180);
-  // shoot->setWaveform(SINE);
-
-  // shoot->note(F7, 0.250);  
-  //   sound.tone(1100, 4);
-  //   delay(4);
-  //   sound.tone(1000, 4);
-  //   delay(4);
-  //   sound.tone(900, 4);
-  //   delay(4);
-  //   sound.tone(800, 4);
-  //   delay(4);
-  //   sound.tone(700, 4);
-  //   delay(4);
-  //   sound.tone(600, 4);
-  //   delay(4);
-  //   sound.tone(500, 4);
-  //   delay(4);
-  //   sound.tone(400, 4);
+  
+  // shoot->rewind();
+  // shoot->play();
 }
 void trajectory() {
   for (uint8_t t = 0; t < bulletCount; t++) {
@@ -270,8 +262,10 @@ void asteroid() {
         bullet[bulletCount][3] = 0;
         bullet[bulletCount][4] = 0;
         bulletCount = bulletCount - 1;
-        hit->rewind();
-        hit->play();
+        // hit->rewind();
+        // hit->play();
+        hit->note(10, 0.05);
+        
         // sound.tone(150, 75);
         score = score + 2;
 
@@ -330,8 +324,10 @@ void rock() {
         bulletCount = bulletCount - 1;
 
         // sound.tone(150, 75);
-        hit->rewind();
-        hit->play();
+        hit->note(10, 0.05);
+        
+        // hit->rewind();
+        // hit->play();
         score = score + 4;
 
         pebbles[pebbleCount][0] = rocks[r][0];
@@ -381,8 +377,10 @@ void pebble() {
           bullet[a][4] = bullet[a + 1][4];
         }
         bulletCount = bulletCount - 1;
-        hit->rewind();
-        hit->play();
+        // hit->rewind();
+        // hit->play();
+        hit->note(10, 0.05);
+        
         // sound.tone(150, 75);
         score = score + 8;
 
@@ -514,21 +512,28 @@ void resetField() {
   asteroidCount = rockCount = pebbleCount = 0;
 }
 void resetSim() {
-  HDG = 0;
-  shipY = mp.display.height()/2;
-  shipX = mp.display.width()/2;
-  resetField();
-  bgmusic->stop();
-  removeTrack(bgmusic);
-  addTrack(titleMusic);
-  titleMusic->setVolume(250);
-  titleMusic->setRepeat(1);
-  titleMusic->play();
-  simState = ProgState::Main;
-  score = 0;
+	HDG = 0;
+	shipY = mp.display.height()/2;
+	shipX = mp.display.width()/2;
+	resetField();
+	// if(bgmusic->isPlaying())
+	// {
+		// bgmusic->stop();
+  for(uint8_t i = 0; i < 4; i++)
+    if(tracks[i] != nullptr)
+		  removeTrack(tracks[i]);
+	// }
+	addTrack(titleMusic);
+  titleMusic->rewind();
+  if(mp.mediaVolume == 0)
+    titleMusic->setVolume(0);
+  else
+	  titleMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+	titleMusic->setRepeat(1);
+	titleMusic->play();
+	simState = ProgState::Main;
+	score = 0;
 }
-
-
 void enterInitials() {
   name = "";
   String previous = "";
@@ -538,6 +543,8 @@ void enterInitials() {
   bool hiscoreBlink = 0;
   mp.textPointer = 0;
   while (!mp.buttons.released(BTN_A) || name.length() != 3) {
+    if(mp.update())
+      name = mp.textInput(name, 3);
     if (millis() - elapsedMillis >= multi_tap_threshold) //cursor blinking routine
 		{
 			elapsedMillis = millis();
@@ -550,7 +557,6 @@ void enterInitials() {
     }
     previous = name;
    
-    name = mp.textInput(name, 3);
     if(name.indexOf(' ') != -1)
       name = name.substring(0, name.length() - 1);
     if (previous != name)
@@ -578,55 +584,73 @@ void enterInitials() {
       mp.display.drawFastVLine(mp.display.getCursorX(), mp.display.getCursorY()+3, 10, TFT_WHITE);
     mp.display.drawRect(30, 38, 100, 20, TFT_WHITE);
 
-    mp.update();
   }
   while(!mp.update());
 }
+
 void setup() {
-  Serial.begin(115200);
-  shoot = new MPTrack("/SpaceRocks/shoot.wav");
-  collide = new MPTrack("/SpaceRocks/collide.wav");
-  hit = new MPTrack("/SpaceRocks/hit.wav");
-  bgmusic = new MPTrack("/SpaceRocks/bgmusic.wav");
-  titleMusic = new MPTrack("/SpaceRocks/title.wav");
-  gameoverMusic = new MPTrack("/SpaceRocks/gameover.wav");
-  destroyed = new MPTrack("/SpaceRocks/destroyed.wav");
-  // put your setup code here, to run once:
-  mp.begin(0);
-  addTrack(shoot);
-  addTrack(collide);
-  addTrack(hit);
-  JsonArray &hiscores = mp.getJSONfromSAV(highscoresPath);
-  
-  if(hiscores.success())
+	Serial.begin(115200);
+	mp.begin();
+	mp.dataRefreshFlag = 0;
+	// shoot = new MPTrack("/SpaceRocks/shoot.wav");
+	collide = new MPTrack("/SpaceRocks/collide.wav");
+	hit = new Oscillator(NOISE);
+	bgmusic = new MPTrack("/SpaceRocks/bgmusic.wav");
+	titleMusic = new MPTrack("/SpaceRocks/title.wav");
+	gameoverMusic = new MPTrack("/SpaceRocks/gameover.wav");
+	destroyed = new MPTrack("/SpaceRocks/destroyed.wav");
+  shoot = new Oscillator(SQUARE);
+  addOscillator(shoot);
+  addOscillator(hit);
+	// addTrack(shoot);
+  // addOscillator(shoot);
+	addTrack(collide);
+	// addTrack(hit);
+  file = SD.open(highscoresPath);
+  JsonArray &hiscores = mp.jb.parseArray(file);
+  file.close();
+
+	if(hiscores.success())
+	  savePresent = 1;
+	else
+	{
+		Serial.println("No save present");
+		JsonObject &test = mp.jb.createObject();
+		test["Name"] = "ABC";
+		test["Score"] = 0;
+		test["Rank"] = 1;
+		hiscores.add(test);
+		hiscores.prettyPrintTo(Serial);
+		file = SD.open(highscoresPath, "w");
+    hiscores.prettyPrintTo(file);
+    hiscores.prettyPrintTo(Serial);
+    file.close();
+	}
+	hiscores.prettyPrintTo(Serial);
+  shoot->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]);
+  hit->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]/2);
+  // shoot->setADSR(5, 20.5, 20.5, 20.5);
+  if(mp.mediaVolume == 0)
   {
-    savePresent = 1;
+    titleMusic->setVolume(0);
+    // shoot->setVolume(0);
+    // hit->setVolume(0);
+    gameoverMusic->setVolume(0);
+    bgmusic->setVolume(0);
+    destroyed->setVolume(0);
   }
   else
   {
-    Serial.println("No save present");
-    JsonObject &test = mp.jb.createObject();
-    test["Name"] = "ABC";
-    test["Score"] = 0;
-    test["Rank"] = 1;
-    hiscores.add(test);
-    hiscores.prettyPrintTo(Serial);
-    mp.saveJSONtoSAV(highscoresPath, hiscores);
+    // shoot->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+    collide->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+    // hit->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+    titleMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+    gameoverMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+    bgmusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+    destroyed->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
   }
-  hiscores.prettyPrintTo(Serial);
-  // shoot->setVolume(256*mp.volume/14);
-  // collide->setVolume(256*mp.volume/14);
-  // hit->setVolume(256*mp.volume/14);
-  shoot->setVolume(200);
-  collide->setVolume(200);
-  hit->setVolume(200);
-  titleMusic->setVolume(200);
-  gameoverMusic->setVolume(200);
-  bgmusic->setVolume(200);
-  destroyed->setVolume(200);
-  randomSeed(millis());
-  resetSim();
-  resetField();
+	randomSeed(millis());
+	resetSim();
 }
 
 uint32_t randMillis = millis();
@@ -636,18 +660,19 @@ long unsigned int startMillis;
 
 void loop() 
 {
-  if(mp.update())
+ 	if(mp.update())
 	{
     mp.display.fillScreen(TFT_BLACK);
 		switch (simState)
 		{
 			case ProgState::Main: {
-        mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-        //begin homescreen
+        invincibility = 0;
+				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+				//begin homescreen
 				mp.display.setCursor(10, 10);
 				mp.display.setTextSize(2);
-        
-        turnC = random(0, 2) == 1;
+				
+				turnC = random(0, 2) == 1;
 				if (millis() - turnMillis >= 300) {
 					turnMillis = millis();
 					if (turnC)
@@ -658,7 +683,7 @@ void loop()
 				if (HDG > 23) HDG = HDG - 24;
 				if (HDG < 0) HDG = HDG + 24;
 				velocityX = 1;
-        shipY = 100;
+				shipY = 100;
 				ship();
 				if (millis()-shootMillis >= 150 && (bulletCount < 8)) {
 					shootMillis = millis();
@@ -670,44 +695,54 @@ void loop()
 					bulletCount = bulletCount + 1;
 				}
 				trajectory();
-        mp.display.drawIcon(title, 5, 5, 150, 75, 1, TFT_WHITE);
-        mp.display.setCursor(118, 118);
-        mp.display.setTextFont(1);
-        mp.display.setTextSize(1);
-        mp.display.setTextColor(TFT_WHITE);
-        mp.display.printCenter("A: start     B: highscores");
-        if (mp.buttons.released(BTN_A)) {
+				mp.display.drawIcon(title, 5, 5, 150, 75, 1, TFT_WHITE);
+				mp.display.setCursor(118, 110);
+				mp.display.setTextFont(2);
+				mp.display.setTextSize(1);
+				mp.display.setTextColor(TFT_WHITE);
+				mp.display.printCenter("A: start       B: hiscores");
+				if (mp.buttons.released(BTN_A) || mp.buttons.released(BTN_FUN_LEFT))
+        {
 					while(!mp.update());
-          life = 3;
-          resetSim();
-          resetField();
-          
-          simState = ProgState::Simulation;
-          titleMusic->stop();
-          removeTrack(titleMusic);
-          addTrack(bgmusic);
-          bgmusic->setVolume(250);
-          bgmusic->setRepeat(1);
-          bgmusic->play();
-        }
-				if (mp.buttons.released(BTN_B))
+					life = 3;
+					resetSim();
+					resetField();
+          // addOscillator(shoot);
+          addTrack(collide);
+          // addTrack(hit);
+					simState = ProgState::Simulation;
+					titleMusic->stop();
+					removeTrack(titleMusic);
+					addTrack(bgmusic);
+          if(mp.mediaVolume == 0)
+            bgmusic->setVolume(0);
+					else
+            bgmusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+					bgmusic->setRepeat(1);
+          bgmusic->rewind();
+					bgmusic->play();
+				}
+				if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_FUN_RIGHT))
 				{
 					while(!mp.update());
-          Serial.println(ESP.getFreeHeap());
+					Serial.println(ESP.getFreeHeap());
 					simState = ProgState::DataDisplay;
-        }
+				}
 			}
 			break;
 			case ProgState::Simulation: {
 
-        mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
 
-        if (life > 0) {
+				if (life > 0) {
           navigation();
           guidance();
           ship();
-          if (mp.buttons.held(BTN_A, 1) && (bulletCount < 8))
+          if (mp.buttons.released(BTN_A) && (bulletCount < 8))
             firing();
+          if(millis()-pixelsTimer >= 50 && pixelsState==1){
+            FastLED.clear();
+          }
           trajectory();
           asteroid();
           rock();
@@ -737,14 +772,17 @@ void loop()
             bgmusic->pause();
             simState = ProgState::Pause;
           }
-				}
-        else 
-        {
+        }
+				else 
+				{
           delay(500);
           bgmusic->stop();
           removeTrack(bgmusic);
           addTrack(destroyed);
-          destroyed->setVolume(250);
+          if(mp.mediaVolume == 0)
+            destroyed->setVolume(0);
+          else
+            destroyed->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
           destroyed->play();
           dyingAnimation();
           mp.display.drawIcon(backdrop, 0, 0, 160, 128);
@@ -764,7 +802,10 @@ void loop()
           destroyed->stop();
           removeTrack(destroyed);
           addTrack(gameoverMusic);
-          gameoverMusic->setVolume(250);
+          if(mp.mediaVolume == 0)
+            gameoverMusic->setVolume(0);
+          else
+            gameoverMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
           gameoverMusic->play();
           gameoverMusic->setRepeat(1);
           while(!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_B))
@@ -772,37 +813,39 @@ void loop()
           while(!mp.update());
           
           simState = ProgState::DataEntry;
-				}
+        }
 			}
 			break;
 
 			case ProgState::DataEntry:
       {
-        shoot->stop();
-        bgmusic->stop();
-        collide->stop();
-        hit->stop();
-        gameoverMusic->stop();
-        removeTrack(shoot);
-        removeTrack(bgmusic);
-        removeTrack(collide);
-        removeTrack(hit);
-        removeTrack(gameoverMusic);
-        JsonArray &hiscores = mp.getJSONfromSAV(highscoresPath);
-        for (JsonObject& element : hiscores)
-        {
+				// shoot->stop();
+				bgmusic->stop();
+				collide->stop();
+				// hit->stop();
+				gameoverMusic->stop();
+				// removeTrack(shoot);
+				removeTrack(bgmusic);
+				removeTrack(collide);
+				// removeTrack(hit);
+				removeTrack(gameoverMusic);
+        file = SD.open(highscoresPath);
+				JsonArray &hiscores = mp.jb.parseArray(file);
+        file.close();
+				for (JsonObject& element : hiscores)
+				{
           if(element["Rank"] == 1)
             tempScore = element["Score"].as<int>();
-        }
-        
-        enterInitials();
-        JsonObject &newHiscore = mp.jb.createObject();
-        newHiscore["Name"] = name;
-        newHiscore["Score"] = score;
+				}
+				
+				enterInitials();
+				JsonObject &newHiscore = mp.jb.createObject();
+				newHiscore["Name"] = name;
+				newHiscore["Score"] = score;
         newHiscore["Rank"] = 1;
 
-        if(savePresent && hiscores.size() > 0)
-        {
+				if(savePresent && hiscores.size() > 0)
+				{
           newHiscore["Rank"] = 999;
           Serial.println(hiscores.size());
           uint16_t tempSize = hiscores.size();
@@ -814,161 +857,165 @@ void loop()
             delay(5);
             if(score >= (uint16_t)(hiscores[i]["Score"]))
             {
-              Serial.println("ENTERED");
-              delay(5);
-              if((uint16_t)(newHiscore["Rank"]) >  (uint16_t)(hiscores[i]["Rank"]))
-              {
-                newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]);
-              }
-              JsonObject &tempObject = mp.jb.createObject();
-              tempObject["Name"] = (const char *)(hiscores[i]["Name"]);
-              tempObject["Score"] = (uint16_t)(hiscores[i]["Score"]);
-              tempObject["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
-              tempObject.prettyPrintTo(Serial);
-              delay(5);
-              hiscores.remove(i);
-              hiscores.add(tempObject);
-              tempSize--;
-              i--;
+            Serial.println("ENTERED");
+            delay(5);
+            if((uint16_t)(newHiscore["Rank"]) >  (uint16_t)(hiscores[i]["Rank"]))
+            {
+              newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]);
+            }
+            JsonObject &tempObject = mp.jb.createObject();
+            tempObject["Name"] = (const char *)(hiscores[i]["Name"]);
+            tempObject["Score"] = (uint16_t)(hiscores[i]["Score"]);
+            tempObject["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
+            tempObject.prettyPrintTo(Serial);
+            delay(5);
+            hiscores.remove(i);
+            hiscores.add(tempObject);
+            tempSize--;
+            i--;
             }
             else
             {
-              if(newHiscore["Rank"] <= (uint16_t)(hiscores[i]["Rank"]) || newHiscore["Rank"] == 999)
-                newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
+            if(newHiscore["Rank"] <= (uint16_t)(hiscores[i]["Rank"]) || newHiscore["Rank"] == 999)
+              newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
             }
           }
-        }
+				}
 
-        hiscores.add(newHiscore);
-        mp.saveJSONtoSAV(highscoresPath, hiscores);
-        simState = ProgState::DataDisplay;
+				hiscores.add(newHiscore);
+        file = SD.open(highscoresPath, "w");
+        hiscores.prettyPrintTo(file);
+        file.close();
+				simState = ProgState::DataDisplay;
       }
 			break;
 
 			case ProgState::DataDisplay:
       {
-        shoot->stop();
-        titleMusic->stop();
-        collide->stop();
-        hit->stop();
-        removeTrack(shoot);
-        removeTrack(titleMusic);
-        removeTrack(collide);
-        removeTrack(hit);
-        mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-        mp.display.setCursor(32, 0);
-        mp.display.setTextSize(1);
-        mp.display.setTextFont(2);
-        mp.display.setTextColor(TFT_WHITE);
-        mp.display.printCenter("HIGHSCORES");
-        mp.display.setCursor(3, 110);
-        // mp.display.print("LEFT: delete data");
-        JsonArray &hiscores = mp.getJSONfromSAV(highscoresPath);
-        for (int i = 1; i < 6;i++)
-        {
-          mp.display.setCursor(27, i * 20);
-          if(i <= hiscores.size())
+				// shoot->stop();
+				titleMusic->stop();
+				collide->stop();
+				// hit->stop();
+				// removeTrack(shoot);
+				// removeTrack(titleMusic);
+				// removeTrack(collide);
+				// removeTrack(hit);
+			
+        file = SD.open(highscoresPath);
+				JsonArray &hiscores = mp.jb.parseArray(file);
+        file.close();
+				
+				while(1)
+				{
+          mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+          mp.display.setCursor(32, 0);
+          mp.display.setTextSize(1);
+          mp.display.setTextFont(2);
+          mp.display.setTextColor(TFT_WHITE);
+          mp.display.printCenter("HIGHSCORES");
+          mp.display.setCursor(4, 112);
+          mp.display.print("Erase");
+          for (int i = 1; i < 6;i++)
           {
-            for(JsonObject& element:hiscores)
+            mp.display.setCursor(27, i * 19);
+            if(i <= hiscores.size())
             {
-              if(element["Rank"] == i)
-                mp.display.printf("%d.   %.3s    %04d", i, element["Name"].as<char*>(), element["Score"].as<uint16_t>());
+              for(JsonObject& element:hiscores)
+              {
+                if(element["Rank"] == i)
+                  mp.display.printf("%d.   %.3s    %04d", i, element["Name"].as<char*>(), element["Score"].as<uint16_t>());
+              }
             }
+            else
+              mp.display.printf("%d.    ---   ----", i);
           }
-          else
-            mp.display.printf("%d.    ---   ----", i);
-          
-        }
-        while(1)
-        {
-          if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_A))
-          {
-            while (!mp.update());          
-            resetSim();
-            break;
-          }
-          if (mp.buttons.released(BTN_LEFT))
-          {
-            simState = ProgState::DataErasure;
-            break;
-          }
-          mp.update();
-        }
-        addTrack(shoot);
-        addTrack(collide);
-        addTrack(hit);
-        addTrack(titleMusic);
+					if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_A))
+					{
+						while (!mp.update());          
+						resetSim();
+						break;
+					}
+					if (mp.buttons.released(BTN_FUN_LEFT))
+					{
+						simState = ProgState::DataErasure;
+						break;
+					}
+					mp.update();
+				}
+				// addTrack(shoot);
+				// addTrack(collide);
+				// addTrack(hit);
+				// addTrack(titleMusic);
       }
 			break;
 
 			case ProgState::Pause:
-      mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-			mp.display.setCursor(32, mp.display.height()/2 - 25);
-			mp.display.setTextSize(2);
-      mp.display.setTextFont(2);
-      mp.display.setTextColor(TFT_WHITE);
-      mp.display.printCenter(F("PAUSE"));
-      mp.display.setTextSize(1);
-      mp.display.setCursor(110,110);
-      mp.display.printCenter("A: resume       B: quit");
-			if (mp.buttons.released(BTN_A))
-      { 
-        simState = ProgState::Simulation;
-        bgmusic->resume();
-      }
-      if (mp.buttons.released(BTN_B))
-        resetSim();
+			mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+      mp.display.setCursor(32, mp.display.height()/2 - 25);
+      mp.display.setTextSize(2);
+			mp.display.setTextFont(2);
+			mp.display.setTextColor(TFT_WHITE);
+			mp.display.printCenter(F("PAUSE"));
+			mp.display.setTextSize(1);
+			mp.display.setCursor(110,110);
+			mp.display.printCenter("A: resume       B: quit");
+      if (mp.buttons.released(BTN_A))
+			{ 
+				simState = ProgState::Simulation;
+				bgmusic->resume();
+			}
+			if (mp.buttons.released(BTN_B))
+				resetSim();
 			break;
 
 			case ProgState::DataErasure:
-			unsigned long elapsedMillis = millis();
-      bool blinkState = 1;
-      while(1)
-      {
-        mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-        mp.display.setTextFont(2);
+			while(1)
+			{
+				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+				mp.display.setTextFont(2);
+				mp.display.setTextColor(TFT_WHITE);
+				mp.display.setCursor(4, 5);
+				mp.display.printCenter("ARE YOU SURE?");
+				mp.display.setCursor(4, 25);
+				mp.display.printCenter("This cannot be reverted");
 
-        if (millis() - elapsedMillis >= multi_tap_threshold) {
-          elapsedMillis = millis();
-          blinkState = !blinkState;
-        }
+				mp.display.fillRect(110, 102, 45, 9*2, TFT_GREENYELLOW);
+        mp.display.fillRect(5, 102, 45, 9*2, TFT_RED);
+        mp.display.setTextColor(TFT_BLACK);
+        mp.display.setCursor(9, 103);
+        mp.display.print("Delete");
+        mp.display.setCursor(113, 103);
+        mp.display.print("Cancel");
 
-        mp.display.setTextColor(TFT_WHITE);
-        mp.display.setCursor(4, 5);
-        mp.display.printCenter("ARE YOU SURE?");
-        mp.display.setCursor(4, 25);
-        mp.display.printCenter("This cannot be reverted");
-
-        if (blinkState){
-          mp.display.drawRect((mp.display.width() - 60)/2, 102, 30*2, 9*2, TFT_RED);
-          mp.display.setTextColor(TFT_RED);
-          mp.display.setCursor(28*2, 103);
-          mp.display.printCenter("DELETE");
-        }
-        else {
-          mp.display.fillRect((mp.display.width() - 60)/2, 102, 30*2, 9*2, TFT_RED);
-          mp.display.setTextColor(TFT_WHITE);
-          mp.display.setCursor(28*2, 103);
-          mp.display.printCenter("DELETE");
-        }
-        if (mp.buttons.released(BTN_B)) //BUTTON BACK
-        {
+				if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_FUN_RIGHT)) //BUTTON BACK
+				{
           Serial.println("Go back");
           while (!mp.update());
           simState = ProgState::DataDisplay;
           break;
-        }
-        if (mp.buttons.released(BTN_A)) // DELETE
-        {
+				}
+				if (mp.buttons.released(BTN_A) || mp.buttons.released(BTN_FUN_LEFT)) // DELETE
+				{
           while(!mp.update());
+          for(int i = 0; i< 4; i++)
+          {
+            if(tracks[i] != nullptr)
+              removeTrack(tracks[i]);
+          }
           JsonArray &empty = mp.jb.createArray();
-          mp.saveJSONtoSAV(highscoresPath, empty);
+          file = SD.open(highscoresPath, "w");
+          empty.prettyPrintTo(file);
+          file.close();
+          // addTrack(shoot);
+          addTrack(collide);
+          // addTrack(hit);
+          addTrack(titleMusic);
+          resetSim();
           simState = ProgState::Main;
           break;
-        }
-        mp.update();
-      }
-      
+				}
+				mp.update();
+			}
 			break;
 		}
 	}
