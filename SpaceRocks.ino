@@ -402,12 +402,14 @@ void pebble() {
 }
 void radar() {
   if(invincibility)
+  {
     if(millis() - invincMillis >= INVINCIBILITY_PERIOD)
     {
       invincibility = 0;
     }
     else
       return;
+  }
 
   for (uint8_t a = 0; a < asteroidCount; a ++) {
     if (abs(asteroids[a][0] - shipX) < 17 && abs(asteroids[a][2] - shipY) < 17) {
@@ -542,27 +544,27 @@ void enterInitials() {
   bool blinkState = 1;
   bool hiscoreBlink = 0;
   mp.textPointer = 0;
-  while (!mp.buttons.released(BTN_A) || name.length() != 3) {
+  while ((!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_FUN_RIGHT)) || name.length() != 3) {
     if(mp.update())
-      name = mp.textInput(name, 3);
+    	name = mp.textInput(name, 3);
     if (millis() - elapsedMillis >= multi_tap_threshold) //cursor blinking routine
-		{
-			elapsedMillis = millis();
-			blinkState = !blinkState;
-		}
+	{
+		elapsedMillis = millis();
+		blinkState = !blinkState;
+	}
     if(millis()-hiscoreMillis >= 1000)
     {
-      hiscoreMillis = millis();
-      hiscoreBlink = !hiscoreBlink;
+		hiscoreMillis = millis();
+		hiscoreBlink = !hiscoreBlink;
     }
     previous = name;
    
     if(name.indexOf(' ') != -1)
-      name = name.substring(0, name.length() - 1);
+    	name = name.substring(0, name.length() - 1);
     if (previous != name)
     {
-      blinkState = 1;
-      elapsedMillis = millis();
+		blinkState = 1;
+		elapsedMillis = millis();
     }
     
     mp.display.drawIcon(backdrop, 0, 0, 160, 128);
@@ -574,15 +576,20 @@ void enterInitials() {
     mp.display.setCursor(39, 80);
     
     if(hiscoreBlink && score > tempScore)
-      mp.display.printCenter("NEW HIGH!");
+		mp.display.printCenter("NEW HIGH!");
     else
-      mp.display.printf("SCORE: %04d", score);
+		mp.display.printf("SCORE: %04d", score);
 
     mp.display.setCursor(50, 40);
     mp.display.printCenter(name);
     if(blinkState)
-      mp.display.drawFastVLine(mp.display.getCursorX(), mp.display.getCursorY()+3, 10, TFT_WHITE);
+		mp.display.drawFastVLine(mp.display.getCursorX(), mp.display.getCursorY()+3, 10, TFT_WHITE);
     mp.display.drawRect(30, 38, 100, 20, TFT_WHITE);
+	mp.display.setCursor(118, 110);
+	mp.display.setTextFont(2);
+	mp.display.setTextSize(1);
+	mp.display.setTextColor(TFT_WHITE);
+	mp.display.printCenter("Erase            Confirm");
 
   }
   while(!mp.update());
@@ -599,19 +606,18 @@ void setup() {
 	titleMusic = new MPTrack("/SpaceRocks/title.wav");
 	gameoverMusic = new MPTrack("/SpaceRocks/gameover.wav");
 	destroyed = new MPTrack("/SpaceRocks/destroyed.wav");
-  shoot = new Oscillator(SQUARE);
-  addOscillator(shoot);
-  addOscillator(hit);
-	// addTrack(shoot);
-  // addOscillator(shoot);
-	addTrack(collide);
-	// addTrack(hit);
-  file = SD.open(highscoresPath);
-  JsonArray &hiscores = mp.jb.parseArray(file);
-  file.close();
-
+	shoot = new Oscillator(SQUARE);
+	addOscillator(shoot);
+	addOscillator(hit);
+		// addTrack(shoot);
+	// addOscillator(shoot);
+		addTrack(collide);
+		// addTrack(hit);
+	file = SD.open(highscoresPath);
+	JsonArray &hiscores = mp.jb.parseArray(file);
+	file.close();
 	if(hiscores.success())
-	  savePresent = 1;
+		savePresent = 1;
 	else
 	{
 		Serial.println("No save present");
@@ -622,33 +628,33 @@ void setup() {
 		hiscores.add(test);
 		hiscores.prettyPrintTo(Serial);
 		file = SD.open(highscoresPath, "w");
-    hiscores.prettyPrintTo(file);
-    hiscores.prettyPrintTo(Serial);
-    file.close();
+		hiscores.prettyPrintTo(file);
+		hiscores.prettyPrintTo(Serial);
+		file.close();
 	}
 	hiscores.prettyPrintTo(Serial);
-  shoot->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]);
-  hit->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]/2);
-  // shoot->setADSR(5, 20.5, 20.5, 20.5);
-  if(mp.mediaVolume == 0)
-  {
-    titleMusic->setVolume(0);
-    // shoot->setVolume(0);
-    // hit->setVolume(0);
-    gameoverMusic->setVolume(0);
-    bgmusic->setVolume(0);
-    destroyed->setVolume(0);
-  }
-  else
-  {
-    // shoot->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-    collide->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-    // hit->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-    titleMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-    gameoverMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-    bgmusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-    destroyed->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-  }
+	shoot->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]);
+	hit->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]/2);
+	// shoot->setADSR(5, 20.5, 20.5, 20.5);
+	if(mp.mediaVolume == 0)
+	{
+		titleMusic->setVolume(0);
+		// shoot->setVolume(0);
+		// hit->setVolume(0);
+		gameoverMusic->setVolume(0);
+		bgmusic->setVolume(0);
+		destroyed->setVolume(0);
+	}
+	else
+	{
+		// shoot->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+		collide->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+		// hit->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+		titleMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+		gameoverMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+		bgmusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+		destroyed->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+	}
 	randomSeed(millis());
 	resetSim();
 }
@@ -657,16 +663,19 @@ uint32_t randMillis = millis();
 uint32_t shootMillis = millis();
 uint32_t turnMillis = millis();
 long unsigned int startMillis;
-
+const char *titleMenu[3] PROGMEM = {"Start", "Hiscores", "Quit"};
+uint8_t titleCursor = 0;
+bool blinkState = 0;
+uint32_t blinkMillis = millis();
 void loop() 
 {
  	if(mp.update())
 	{
-    mp.display.fillScreen(TFT_BLACK);
-		switch (simState)
+		mp.display.fillScreen(TFT_BLACK);
+    	switch (simState)
 		{
 			case ProgState::Main: {
-        invincibility = 0;
+				invincibility = 0;
 				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
 				//begin homescreen
 				mp.display.setCursor(10, 10);
@@ -683,7 +692,7 @@ void loop()
 				if (HDG > 23) HDG = HDG - 24;
 				if (HDG < 0) HDG = HDG + 24;
 				velocityX = 1;
-				shipY = 100;
+				shipY = 98;
 				ship();
 				if (millis()-shootMillis >= 150 && (bulletCount < 8)) {
 					shootMillis = millis();
@@ -694,39 +703,89 @@ void loop()
 					bullet[bulletCount][4] = 100;
 					bulletCount = bulletCount + 1;
 				}
+				if(millis() - blinkMillis > 200)
+				{
+					blinkMillis = millis();
+					blinkState = !blinkState;
+				}
 				trajectory();
 				mp.display.drawIcon(title, 5, 5, 150, 75, 1, TFT_WHITE);
 				mp.display.setCursor(118, 110);
 				mp.display.setTextFont(2);
 				mp.display.setTextSize(1);
 				mp.display.setTextColor(TFT_WHITE);
-				mp.display.printCenter("A: start       B: hiscores");
-				if (mp.buttons.released(BTN_A) || mp.buttons.released(BTN_FUN_LEFT))
-        {
-					while(!mp.update());
-					life = 3;
-					resetSim();
-					resetField();
-          // addOscillator(shoot);
-          addTrack(collide);
-          // addTrack(hit);
-					simState = ProgState::Simulation;
-					titleMusic->stop();
-					removeTrack(titleMusic);
-					addTrack(bgmusic);
-          if(mp.mediaVolume == 0)
-            bgmusic->setVolume(0);
-					else
-            bgmusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-					bgmusic->setRepeat(1);
-          bgmusic->rewind();
-					bgmusic->play();
-				}
-				if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_FUN_RIGHT))
+				mp.display.drawRect(34, 110, 92, 18, TFT_WHITE);
+				mp.display.drawRect(33, 109, 94, 20, TFT_WHITE);
+
+				mp.display.setCursor(18*2, 110);
+				mp.display.printCenter(titleMenu[titleCursor]);
+				if(blinkState)
 				{
-					while(!mp.update());
-					Serial.println(ESP.getFreeHeap());
-					simState = ProgState::DataDisplay;
+					if (titleCursor == 0)
+					{
+						mp.display.drawBitmap(11*2, 112, arrowLeft, TFT_WHITE, 2);
+						mp.display.drawBitmap(66*2, 112, arrowRight, TFT_WHITE, 2);
+					}
+					else if (titleCursor == 2)
+					{
+						mp.display.drawBitmap(10*2, 112, arrowLeft, TFT_WHITE, 2);
+						mp.display.drawBitmap(65*2, 112, arrowRight, TFT_WHITE, 2);
+					}
+					else
+					{
+						mp.display.drawBitmap(10*2, 112, arrowLeft, TFT_WHITE, 2);
+						mp.display.drawBitmap(66*2, 112, arrowRight, TFT_WHITE, 2);
+					}
+				}
+				else
+				{
+					mp.display.drawBitmap(11*2, 112, arrowLeft, TFT_WHITE, 2);
+					mp.display.drawBitmap(65*2, 112, arrowRight, TFT_WHITE, 2);
+				}
+				if (mp.buttons.released(BTN_A))
+				{
+					mp.buttons.update();
+					switch (titleCursor)
+					{
+						case 0:
+							life = 3;
+							resetSim();
+							resetField();
+							// addOscillator(shoot);
+							addTrack(collide);
+							// addTrack(hit);
+							simState = ProgState::Simulation;
+							titleMusic->stop();
+							removeTrack(titleMusic);
+							addTrack(bgmusic);
+							if(mp.mediaVolume == 0)
+								bgmusic->setVolume(0);
+							else
+								bgmusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+							bgmusic->setRepeat(1);
+							bgmusic->rewind();
+							bgmusic->play();
+							break;
+						
+						case 1:
+
+							simState = ProgState::DataDisplay;
+							break;
+						case 2:
+							mp.loader();
+							break;
+					}
+					titleCursor = 0;
+				}
+				if(mp.buttons.released(BTN_LEFT) && titleCursor > 0)
+				{
+					mp.buttons.update();
+					titleCursor--;
+				}
+				if(mp.buttons.released(BTN_RIGHT) && titleCursor < 2)
+				{
+					mp.buttons.update();
+					titleCursor++;
 				}
 			}
 			break;
@@ -735,90 +794,86 @@ void loop()
 				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
 
 				if (life > 0) {
-          navigation();
-          guidance();
-          ship();
-          if (mp.buttons.released(BTN_A) && (bulletCount < 8))
-            firing();
-          if(millis()-pixelsTimer >= 50 && pixelsState==1){
-            FastLED.clear();
-          }
-          trajectory();
-          asteroid();
-          rock();
-          pebble();
-          radar();
-          mp.display.setTextFont(2);
-          mp.display.setTextSize(1);
-          mp.display.setTextColor(TFT_GREEN);
-          mp.display.setCursor(4, 2);
-          mp.display.printf("LV:%d      %04d       X%d", level, score, life);
-          uint8_t tempHDG = HDG;
-          uint8_t tempX = shipX;
-          uint8_t tempY = shipY;
-          HDG = 0;
-          shipX = 130;
-          shipY = 10;
-          mp.display.fillTriangle(shipX0*2, shipY0*2, shipX1*2, shipY1*2, shipX2*2, shipY2*2, TFT_LIGHTGREY);
-          mp.display.drawTriangle(shipX0*2, shipY0*2, shipX1*2, shipY1*2, shipX2*2, shipY2*2, TFT_LIGHTGREY);
-          mp.display.fillTriangle(shipX0, shipY0, shipX1, shipY1, shipX2, shipY2, TFT_NAVY);
-          HDG = tempHDG;
-          shipX = tempX;
-          shipY = tempY;
-          // if (life == 0)
-          //   resetField();
-          if (mp.buttons.released(BTN_B)) 
-          {
-            bgmusic->pause();
-            simState = ProgState::Pause;
-          }
-        }
+					navigation();
+					guidance();
+					ship();
+					if (mp.buttons.released(BTN_A) && (bulletCount < 8))
+						firing();
+					if(millis()-pixelsTimer >= 50 && pixelsState==1)
+						FastLED.clear();
+					trajectory();
+					asteroid();
+					rock();
+					pebble();
+					radar();
+					mp.display.setTextFont(2);
+					mp.display.setTextSize(1);
+					mp.display.setTextColor(TFT_GREEN);
+					mp.display.setCursor(4, 2);
+					mp.display.printf("LV:%d      %04d       X%d", level, score, life);
+					uint8_t tempHDG = HDG;
+					uint8_t tempX = shipX;
+					uint8_t tempY = shipY;
+					HDG = 0;
+					shipX = 130;
+					shipY = 10;
+					mp.display.fillTriangle(shipX0*2, shipY0*2, shipX1*2, shipY1*2, shipX2*2, shipY2*2, TFT_LIGHTGREY);
+					mp.display.drawTriangle(shipX0*2, shipY0*2, shipX1*2, shipY1*2, shipX2*2, shipY2*2, TFT_LIGHTGREY);
+					mp.display.fillTriangle(shipX0, shipY0, shipX1, shipY1, shipX2, shipY2, TFT_NAVY);
+					HDG = tempHDG;
+					shipX = tempX;
+					shipY = tempY;
+					// if (life == 0)
+					//   resetField();
+					if (mp.buttons.released(BTN_B)) 
+					{
+						bgmusic->pause();
+						simState = ProgState::Pause;
+					}
+				}
 				else 
 				{
-          delay(500);
-          bgmusic->stop();
-          removeTrack(bgmusic);
-          addTrack(destroyed);
-          if(mp.mediaVolume == 0)
-            destroyed->setVolume(0);
-          else
-            destroyed->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-          destroyed->play();
-          dyingAnimation();
-          mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-          while(!mp.update());
-          for (int i = 0; i < mp.display.height(); i+=4)
-          {
-            for (int x = 0; x < mp.display.width(); x++)
-            {
-              mp.display.drawPixel(x, i, TFT_DARKGREY);
-              mp.display.drawPixel(x, i+1, TFT_DARKGREY);
-              mp.update();
-              delayMicroseconds(30);
-            }
-          }
-          mp.display.drawBitmap(26, 15, gameover, TFT_DARKGREY);
-          mp.display.drawBitmap(28, 13, gameover, TFT_BLACK);
-          destroyed->stop();
-          removeTrack(destroyed);
-          addTrack(gameoverMusic);
-          if(mp.mediaVolume == 0)
-            gameoverMusic->setVolume(0);
-          else
-            gameoverMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
-          gameoverMusic->play();
-          gameoverMusic->setRepeat(1);
-          while(!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_B))
-            mp.update();
-          while(!mp.update());
-          
-          simState = ProgState::DataEntry;
-        }
+					delay(500);
+					bgmusic->stop();
+					removeTrack(bgmusic);
+					addTrack(destroyed);
+					if(mp.mediaVolume == 0)
+						destroyed->setVolume(0);
+					else
+						destroyed->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+					destroyed->play();
+					dyingAnimation();
+					mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+					while(!mp.update());
+					for (int i = 0; i < mp.display.height(); i+=4)
+					{
+						mp.display.drawFastHLine(0, i, mp.display.width(), TFT_DARKGREY);
+						mp.display.drawFastHLine(0, i+1, mp.display.width(), TFT_DARKGREY);
+						if(i % 4 == 0)
+							mp.display.pushSprite(0,0);
+						// delayMicroseconds(750);
+					}
+					mp.display.drawBitmap(26, 15, gameover, TFT_DARKGREY);
+					mp.display.drawBitmap(28, 13, gameover, TFT_BLACK);
+					destroyed->stop();
+					removeTrack(destroyed);
+					addTrack(gameoverMusic);
+					if(mp.mediaVolume == 0)
+						gameoverMusic->setVolume(0);
+					else
+						gameoverMusic->setVolume(map(mp.mediaVolume, 0, 14, 100, 300));
+					gameoverMusic->play();
+					gameoverMusic->setRepeat(1);
+					while(!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_B))
+						mp.update();
+					while(!mp.update());
+					simState = ProgState::DataEntry;
+				}
 			}
 			break;
 
 			case ProgState::DataEntry:
-      {
+			{
 				// shoot->stop();
 				bgmusic->stop();
 				collide->stop();
@@ -829,69 +884,70 @@ void loop()
 				removeTrack(collide);
 				// removeTrack(hit);
 				removeTrack(gameoverMusic);
-        file = SD.open(highscoresPath);
-				JsonArray &hiscores = mp.jb.parseArray(file);
-        file.close();
-				for (JsonObject& element : hiscores)
+				file = SD.open(highscoresPath);
+				JsonArray &hiscores1 = mp.jb.parseArray(file);
+				file.close();
+				for (JsonObject& element : hiscores1)
 				{
-          if(element["Rank"] == 1)
-            tempScore = element["Score"].as<int>();
+					if(element["Rank"] == 1)
+						tempScore = element["Score"].as<int>();
 				}
-				
+						
 				enterInitials();
+				file = SD.open(highscoresPath);
+				JsonArray &hiscores = mp.jb.parseArray(file);
+				file.close();
 				JsonObject &newHiscore = mp.jb.createObject();
 				newHiscore["Name"] = name;
 				newHiscore["Score"] = score;
-        newHiscore["Rank"] = 1;
+				newHiscore["Rank"] = 1;
 
 				if(savePresent && hiscores.size() > 0)
 				{
-          newHiscore["Rank"] = 999;
-          Serial.println(hiscores.size());
-          uint16_t tempSize = hiscores.size();
-          for (int16_t i = 0; i < tempSize;i++)//searching for a place in the leaderboard for our new score
-          {
-            Serial.printf("i: %d\n", i);
-            Serial.println((uint16_t)(hiscores[i]["Rank"]));
-            Serial.println((uint16_t)(hiscores[i]["Score"]));
-            delay(5);
-            if(score >= (uint16_t)(hiscores[i]["Score"]))
-            {
-            Serial.println("ENTERED");
-            delay(5);
-            if((uint16_t)(newHiscore["Rank"]) >  (uint16_t)(hiscores[i]["Rank"]))
-            {
-              newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]);
-            }
-            JsonObject &tempObject = mp.jb.createObject();
-            tempObject["Name"] = (const char *)(hiscores[i]["Name"]);
-            tempObject["Score"] = (uint16_t)(hiscores[i]["Score"]);
-            tempObject["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
-            tempObject.prettyPrintTo(Serial);
-            delay(5);
-            hiscores.remove(i);
-            hiscores.add(tempObject);
-            tempSize--;
-            i--;
-            }
-            else
-            {
-            if(newHiscore["Rank"] <= (uint16_t)(hiscores[i]["Rank"]) || newHiscore["Rank"] == 999)
-              newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
-            }
-          }
+					newHiscore["Rank"] = 999;
+					Serial.println(hiscores.size());
+					uint16_t tempSize = hiscores.size();
+					for (int16_t i = 0; i < tempSize;i++)//searching for a place in the leaderboard for our new score
+					{
+						Serial.printf("i: %d\n", i);
+						Serial.println((uint16_t)(hiscores[i]["Rank"]));
+						Serial.println((uint16_t)(hiscores[i]["Score"]));
+						delay(5);
+						if(score >= (uint16_t)(hiscores[i]["Score"]))
+						{
+							Serial.println("ENTERED");
+							delay(5);
+							if((uint16_t)(newHiscore["Rank"]) >  (uint16_t)(hiscores[i]["Rank"]))
+								newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]);
+							JsonObject &tempObject = mp.jb.createObject();
+							tempObject["Name"] = (const char *)(hiscores[i]["Name"]);
+							tempObject["Score"] = (uint16_t)(hiscores[i]["Score"]);
+							tempObject["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
+							tempObject.prettyPrintTo(Serial);
+							delay(5);
+							hiscores.remove(i);
+							hiscores.add(tempObject);
+							tempSize--;
+							i--;
+						}
+						else
+						{
+							if(newHiscore["Rank"] <= (uint16_t)(hiscores[i]["Rank"]) || newHiscore["Rank"] == 999)
+								newHiscore["Rank"] = (uint16_t)(hiscores[i]["Rank"]) + 1;
+						}
+					}
 				}
 
 				hiscores.add(newHiscore);
-        file = SD.open(highscoresPath, "w");
-        hiscores.prettyPrintTo(file);
-        file.close();
+				file = SD.open(highscoresPath, "w");
+				hiscores.prettyPrintTo(file);
+				file.close();
 				simState = ProgState::DataDisplay;
-      }
+			}
 			break;
 
 			case ProgState::DataDisplay:
-      {
+			{
 				// shoot->stop();
 				titleMusic->stop();
 				collide->stop();
@@ -900,42 +956,51 @@ void loop()
 				// removeTrack(titleMusic);
 				// removeTrack(collide);
 				// removeTrack(hit);
-			
-        file = SD.open(highscoresPath);
+				file = SD.open(highscoresPath);
 				JsonArray &hiscores = mp.jb.parseArray(file);
-        file.close();
-				
+				file.close();
+				const char* nameArray[6];
+				memset(nameArray, 0, 6);
+				uint16_t scoreArray[6];
+				memset(scoreArray, 0, 6);
+				uint16_t hiscoresSize = hiscores.size();
+				for(uint8_t i = 0; i < 6; i++)
+				{
+					for(JsonObject& element:hiscores)
+					{
+						if(element["Rank"] == i)
+						{
+							nameArray[i] = element["Name"];
+							scoreArray[i] = element["Score"];
+						}
+					}
+				}
+						
 				while(1)
 				{
-          mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-          mp.display.setCursor(32, 0);
-          mp.display.setTextSize(1);
-          mp.display.setTextFont(2);
-          mp.display.setTextColor(TFT_WHITE);
-          mp.display.printCenter("HIGHSCORES");
-          mp.display.setCursor(4, 112);
-          mp.display.print("Erase");
-          for (int i = 1; i < 6;i++)
-          {
-            mp.display.setCursor(27, i * 19);
-            if(i <= hiscores.size())
-            {
-              for(JsonObject& element:hiscores)
-              {
-                if(element["Rank"] == i)
-                  mp.display.printf("%d.   %.3s    %04d", i, element["Name"].as<char*>(), element["Score"].as<uint16_t>());
-              }
-            }
-            else
-              mp.display.printf("%d.    ---   ----", i);
-          }
-					if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_A))
+					mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+					mp.display.setCursor(32, 0);
+					mp.display.setTextSize(1);
+					mp.display.setTextFont(2);
+					mp.display.setTextColor(TFT_WHITE);
+					mp.display.printCenter("HIGHSCORES");
+					mp.display.setCursor(4, 112);
+					mp.display.print("Erase");
+					for(int i = 1; i < 6;i++)
+					{
+						mp.display.setCursor(27, i * 19);
+						if(i <= hiscores.size())
+							mp.display.printf("%d.   %.3s    %04d", i, nameArray[i], scoreArray[i]);
+						else
+							mp.display.printf("%d.    ---   ----", i);
+					}
+					if(mp.buttons.released(BTN_B))
 					{
 						while (!mp.update());          
 						resetSim();
 						break;
 					}
-					if (mp.buttons.released(BTN_FUN_LEFT))
+					if(mp.buttons.released(BTN_FUN_LEFT))
 					{
 						simState = ProgState::DataErasure;
 						break;
@@ -946,76 +1011,76 @@ void loop()
 				// addTrack(collide);
 				// addTrack(hit);
 				// addTrack(titleMusic);
-      }
+			}
 			break;
 
 			case ProgState::Pause:
-			mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-      mp.display.setCursor(32, mp.display.height()/2 - 25);
-      mp.display.setTextSize(2);
-			mp.display.setTextFont(2);
-			mp.display.setTextColor(TFT_WHITE);
-			mp.display.printCenter(F("PAUSE"));
-			mp.display.setTextSize(1);
-			mp.display.setCursor(110,110);
-			mp.display.printCenter("A: resume       B: quit");
-      if (mp.buttons.released(BTN_A))
-			{ 
-				simState = ProgState::Simulation;
-				bgmusic->resume();
-			}
-			if (mp.buttons.released(BTN_B))
-				resetSim();
+				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+				mp.display.setCursor(32, mp.display.height()/2 - 25);
+				mp.display.setTextSize(2);
+				mp.display.setTextFont(2);
+				mp.display.setTextColor(TFT_WHITE);
+				mp.display.printCenter(F("PAUSE"));
+				mp.display.setTextSize(1);
+				mp.display.setCursor(110,110);
+				mp.display.printCenter("A: resume       B: quit");
+				if (mp.buttons.released(BTN_A))
+				{
+					simState = ProgState::Simulation;
+					bgmusic->resume();
+				}
+				if (mp.buttons.released(BTN_B))
+					resetSim();
 			break;
 
 			case ProgState::DataErasure:
-			while(1)
-			{
-				mp.display.drawIcon(backdrop, 0, 0, 160, 128);
-				mp.display.setTextFont(2);
-				mp.display.setTextColor(TFT_WHITE);
-				mp.display.setCursor(4, 5);
-				mp.display.printCenter("ARE YOU SURE?");
-				mp.display.setCursor(4, 25);
-				mp.display.printCenter("This cannot be reverted");
-
-				mp.display.fillRect(110, 102, 45, 9*2, TFT_GREENYELLOW);
-        mp.display.fillRect(5, 102, 45, 9*2, TFT_RED);
-        mp.display.setTextColor(TFT_BLACK);
-        mp.display.setCursor(9, 103);
-        mp.display.print("Delete");
-        mp.display.setCursor(113, 103);
-        mp.display.print("Cancel");
-
-				if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_FUN_RIGHT)) //BUTTON BACK
+				while(1)
 				{
-          Serial.println("Go back");
-          while (!mp.update());
-          simState = ProgState::DataDisplay;
-          break;
+					mp.display.drawIcon(backdrop, 0, 0, 160, 128);
+					mp.display.setTextFont(2);
+					mp.display.setTextColor(TFT_WHITE);
+					mp.display.setCursor(4, 5);
+					mp.display.printCenter("ARE YOU SURE?");
+					mp.display.setCursor(4, 25);
+					mp.display.printCenter("This cannot be reverted");
+
+					mp.display.fillRect(110, 102, 45, 9*2, TFT_RED);
+					mp.display.fillRect(5, 102, 45, 9*2, TFT_GREENYELLOW);
+					mp.display.setTextColor(TFT_BLACK);
+					mp.display.setCursor(17, 103);
+					mp.display.print("Yes");
+					mp.display.setCursor(126, 103);
+					mp.display.print("No");
+
+					if (mp.buttons.released(BTN_B) || mp.buttons.released(BTN_FUN_RIGHT)) //BUTTON BACK
+					{
+						Serial.println("Go back");
+						while (!mp.update());
+						simState = ProgState::DataDisplay;
+						break;
+					}
+					if (mp.buttons.released(BTN_A) || mp.buttons.released(BTN_FUN_LEFT)) // DELETE
+					{
+						while(!mp.update());
+						for(int i = 0; i< 4; i++)
+						{
+							if(tracks[i] != nullptr)
+							removeTrack(tracks[i]);
+						}
+						JsonArray &empty = mp.jb.createArray();
+						file = SD.open(highscoresPath, "w");
+						empty.prettyPrintTo(file);
+						file.close();
+						// addTrack(shoot);
+						addTrack(collide);
+						// addTrack(hit);
+						addTrack(titleMusic);
+						resetSim();
+						simState = ProgState::Main;
+						break;
+					}
+					mp.update();
 				}
-				if (mp.buttons.released(BTN_A) || mp.buttons.released(BTN_FUN_LEFT)) // DELETE
-				{
-          while(!mp.update());
-          for(int i = 0; i< 4; i++)
-          {
-            if(tracks[i] != nullptr)
-              removeTrack(tracks[i]);
-          }
-          JsonArray &empty = mp.jb.createArray();
-          file = SD.open(highscoresPath, "w");
-          empty.prettyPrintTo(file);
-          file.close();
-          // addTrack(shoot);
-          addTrack(collide);
-          // addTrack(hit);
-          addTrack(titleMusic);
-          resetSim();
-          simState = ProgState::Main;
-          break;
-				}
-				mp.update();
-			}
 			break;
 		}
 	}
