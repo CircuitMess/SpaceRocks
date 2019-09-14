@@ -43,7 +43,7 @@ float velocityX;
 float velocityY;
 int16_t HDG;
 //bool released;
-signed short bullet[8][5];
+int16_t bullet[8][5];
 float asteroids[8][4];
 uint16_t asteroidDraw[8];
 float rocks[16][4];
@@ -163,8 +163,14 @@ void ship() {
   }
 }
 void navigation() {
-    if (mp.buttons.repeat(BTN_LEFT, 1)) HDG--;
-    if (mp.buttons.repeat(BTN_RIGHT, 1)) HDG++;
+    if (mp.buttons.repeat(BTN_LEFT, 1))
+	{
+		HDG--;
+	}
+    if (mp.buttons.repeat(BTN_RIGHT, 1))
+	{
+		HDG++;
+	}
     if (HDG > 23) HDG = HDG - 24;
     if (HDG < 0) HDG = HDG + 24;
     if (mp.buttons.repeat(BTN_UP, 1)) {
@@ -215,28 +221,28 @@ void firing() {
   // shoot->play();
 }
 void trajectory() {
-  for (uint8_t t = 0; t < bulletCount; t++) {
-    bullet[t][0] = bullet[t][0] + bullet[t][1];
-    bullet[t][2] = bullet[t][2] + bullet[t][3];
-    if (bullet[t][0] < -5) bullet[t][0] = bullet[t][0] + mp.display.width()+10;
-    if (bullet[t][0] > mp.display.width()+5) bullet[t][0] = bullet[t][0] - mp.display.width()-10;
-    if (bullet[t][2] < -5) bullet[t][2] = bullet[t][2] + mp.display.height()+10;
-    if (bullet[t][2] > mp.display.height()+5) bullet[t][2] = bullet[t][2] - mp.display.height()-10;
-    if (bullet[t][4] < 0) {
-      bullet[t][4] = 0;
-      for (uint8_t a = 0; a < bulletCount - 1; a++)
-        for (uint8_t b = 0; b < 5; b++)
-          bullet[a][b] = bullet[a + 1][b];
-      bullet[bulletCount][0] = 0;
-      bullet[bulletCount][1] = 0;
-      bullet[bulletCount][2] = 0;
-      bullet[bulletCount][3] = 0;
-      bullet[bulletCount][4] = 0;
-      bulletCount = bulletCount - 1;
-    }
-    mp.display.fillRect(bullet[t][0], bullet[t][2], 2, 2, TFT_WHITE);
-    bullet[t][4] = bullet[t][4] - 4;
-  }
+  	for (uint8_t t = 0; t < bulletCount; t++) {
+		bullet[t][0] = bullet[t][0] + bullet[t][1];
+		bullet[t][2] = bullet[t][2] + bullet[t][3];
+		if (bullet[t][0] < -5) bullet[t][0] = bullet[t][0] + mp.display.width()+10;
+		if (bullet[t][0] > mp.display.width()+5) bullet[t][0] = bullet[t][0] - mp.display.width()-10;
+		if (bullet[t][2] < -5) bullet[t][2] = bullet[t][2] + mp.display.height()+10;
+		if (bullet[t][2] > mp.display.height()+5) bullet[t][2] = bullet[t][2] - mp.display.height()-10;
+		if (bullet[t][4] < 1) {
+			bullet[t][4] = 0;
+			for (int8_t a = 0; a < bulletCount - 1; a++)
+				for (int8_t b = 0; b < 5; b++)
+					bullet[a][b] = bullet[a + 1][b];
+			bullet[bulletCount][0] = 0;
+			bullet[bulletCount][1] = 0;
+			bullet[bulletCount][2] = 0;
+			bullet[bulletCount][3] = 0;
+			bullet[bulletCount][4] = 0;
+			bulletCount--;
+		}
+		mp.display.fillRect(bullet[t][0], bullet[t][2], 2, 2, TFT_WHITE);
+		bullet[t][4] = bullet[t][4] - 4;
+  	}
 }
 void asteroid() {
   for (uint8_t t = 0; t < asteroidCount; t++) {
@@ -797,11 +803,11 @@ void loop()
 					navigation();
 					guidance();
 					ship();
-					if (mp.buttons.released(BTN_A) && (bulletCount < 8))
-						firing();
+					trajectory();
+
+					
 					if(millis()-pixelsTimer >= 50 && pixelsState==1)
 						FastLED.clear();
-					trajectory();
 					asteroid();
 					rock();
 					pebble();
@@ -811,9 +817,9 @@ void loop()
 					mp.display.setTextColor(TFT_GREEN);
 					mp.display.setCursor(4, 2);
 					mp.display.printf("LV:%d      %04d       X%d", level, score, life);
-					uint8_t tempHDG = HDG;
-					uint8_t tempX = shipX;
-					uint8_t tempY = shipY;
+					int16_t tempHDG = HDG;
+					float tempX = shipX;
+					float tempY = shipY;
 					HDG = 0;
 					shipX = 130;
 					shipY = 10;
@@ -823,8 +829,10 @@ void loop()
 					HDG = tempHDG;
 					shipX = tempX;
 					shipY = tempY;
-					// if (life == 0)
+					// if (life == 0) 
 					//   resetField();
+					if (mp.buttons.released(BTN_A) && (bulletCount < 7))
+						firing();
 					if (mp.buttons.released(BTN_B)) 
 					{
 						bgmusic->pause();
