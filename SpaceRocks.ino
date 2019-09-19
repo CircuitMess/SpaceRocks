@@ -551,8 +551,9 @@ void enterInitials() {
   bool hiscoreBlink = 0;
   mp.textPointer = 0;
   while ((!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_FUN_RIGHT)) || name.length() != 3) {
-    if(mp.update())
-    	name = mp.textInput(name, 3);
+	if(mp.buttons.released(BTN_HOME)) mp.lockscreen();
+	mp.update();
+    name = mp.textInput(name, 3);
     if (millis() - elapsedMillis >= multi_tap_threshold) //cursor blinking routine
 	{
 		elapsedMillis = millis();
@@ -637,6 +638,7 @@ void setup() {
 		hiscores.prettyPrintTo(file);
 		hiscores.prettyPrintTo(Serial);
 		file.close();
+		savePresent = 1;
 	}
 	hiscores.prettyPrintTo(Serial);
 	shoot->setVolume(mp.oscillatorVolumeList[mp.mediaVolume]);
@@ -899,8 +901,7 @@ void loop()
 				{
 					if(element["Rank"] == 1)
 						tempScore = element["Score"].as<int>();
-				}
-						
+				}	
 				enterInitials();
 				file = SD.open(highscoresPath);
 				JsonArray &hiscores = mp.jb.parseArray(file);
@@ -964,6 +965,7 @@ void loop()
 				// removeTrack(titleMusic);
 				// removeTrack(collide);
 				// removeTrack(hit);
+				mp.jb.clear();
 				file = SD.open(highscoresPath);
 				JsonArray &hiscores = mp.jb.parseArray(file);
 				file.close();
