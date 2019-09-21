@@ -551,7 +551,6 @@ void enterInitials() {
   bool hiscoreBlink = 0;
   mp.textPointer = 0;
   while ((!mp.buttons.released(BTN_A) && !mp.buttons.released(BTN_FUN_RIGHT)) || name.length() != 3) {
-	if(mp.buttons.released(BTN_HOME)) mp.lockscreen();
 	mp.update();
     name = mp.textInput(name, 3);
     if (millis() - elapsedMillis >= multi_tap_threshold) //cursor blinking routine
@@ -969,8 +968,7 @@ void loop()
 				file = SD.open(highscoresPath);
 				JsonArray &hiscores = mp.jb.parseArray(file);
 				file.close();
-				const char* nameArray[6];
-				memset(nameArray, 0, 6);
+				char nameArray[6][4];
 				uint16_t scoreArray[6];
 				memset(scoreArray, 0, 6);
 				uint16_t hiscoresSize = hiscores.size();
@@ -980,7 +978,7 @@ void loop()
 					{
 						if(element["Rank"] == i)
 						{
-							nameArray[i] = element["Name"];
+							strncpy(nameArray[i], element["Name"], 4);
 							scoreArray[i] = element["Score"];
 						}
 					}
@@ -999,7 +997,7 @@ void loop()
 					for(int i = 1; i < 6;i++)
 					{
 						mp.display.setCursor(27, i * 19);
-						if(i <= hiscores.size())
+						if(i <= hiscoresSize)
 							mp.display.printf("%d.   %.3s    %04d", i, nameArray[i], scoreArray[i]);
 						else
 							mp.display.printf("%d.    ---   ----", i);
