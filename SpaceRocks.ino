@@ -81,6 +81,8 @@ static const PROGMEM float heading[24][2] = {
   { -0.17, -0.10}, { -0.14, -0.14},
   { -0.10, -0.17}, { -0.05, -0.19}
 };
+const byte arrowLeft[] PROGMEM = {8,7,B00010000,B00110000,B01110000,B11110000,B01110000,B00110000,B00010000,};
+const byte arrowRight[] PROGMEM = {8,7,B10000000,B11000000,B11100000,B11110000,B11100000,B11000000,B10000000,};
 
 static const int8_t shipTbl[6][24] PROGMEM = {
   //HDG
